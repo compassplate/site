@@ -3,6 +3,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>movies | compassplate</title>
+    <link rel="icon" type="image/gif" href="/compass.gif">
     <style>
     * {
         margin: 0;
@@ -292,6 +293,7 @@
         color: #aaa;
     }
 
+
     .video-frame {
         width: 90%;
         height: 90%;
@@ -346,7 +348,7 @@
     const IMG_BASE = 'https://image.tmdb.org/t/p/w500';
 
     if (API_KEY === 'TMDB_API_KEY' || !API_KEY) {
-        alert('Please set your TMDB API key in the code');
+        alert('Please set TMDB API key in the code');
     }
 
     const backButton = document.querySelector('.back');
