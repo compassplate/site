@@ -1,7 +1,6 @@
 {
   "buildCommand": "echo 'No build needed for static + serverless functions'",
   "installCommand": "echo 'No dependencies to install'",
-  "framework": "other",
   "functions": {
     "api/**/*.js": {
       "runtime": "nodejs18.x"
