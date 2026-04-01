@@ -2,7 +2,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>movies | compassplate</title>
+    <title id="pageTitle">movies | compassplate</title>
     <link rel="icon" type="image/gif" href="/compass.gif">
     <style>
     * {
@@ -25,6 +25,30 @@
         height: 50px;
         width: 50px;
         z-index: 100;
+    }
+
+    .type-selector {
+        position: fixed;
+        top: 25px;
+        right: 85px;
+        background-color: black;
+        border: 2px solid white;
+        color: white;
+        padding: 8px 15px;
+        border-radius: 5px;
+        font-size: 1em;
+        cursor: pointer;
+        z-index: 100;
+        font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    }
+
+    .type-selector:hover {
+        background-color: #222;
+    }
+
+    .type-selector option {
+        background-color: #1a1a1a;
+        color: white;
     }
 
     button.back {
@@ -293,12 +317,59 @@
         color: #aaa;
     }
 
-
     .video-frame {
         width: 90%;
         height: 90%;
         border: 2px solid white;
         border-radius: 5px;
+    }
+
+    .seasons-container {
+        margin-top: 20px;
+    }
+
+    .season-selector {
+        background-color: #1a1a1a;
+        border: 2px solid white;
+        color: white;
+        padding: 8px 15px;
+        border-radius: 5px;
+        font-size: 1em;
+        cursor: pointer;
+        margin-bottom: 15px;
+        font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    }
+
+    .season-selector option {
+        background-color: #1a1a1a;
+        color: white;
+    }
+
+    .episodes-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 10px;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .episode-item {
+        background-color: #2a2a2a;
+        padding: 10px 15px;
+        border: 1px solid white;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+
+    .episode-item:hover {
+        background-color: #3a3a3a;
+    }
+
+    .episode-number {
+        font-weight: bold;
+        color: #e50914;
     }
 
     @media (max-width: 600px) {
@@ -316,10 +387,16 @@
 </head>
 <body>
     <button class="back">back</button>
+    
+    <select id="typeSelector" class="type-selector">
+        <option value="movie">Movies</option>
+        <option value="tv">TV Shows</option>
+    </select>
+    
     <img src="/compass.gif" alt="logo" class="anchor-logo">
     
     <div class="container">
-        <h1>movies</h1>
+        <h1 id="pageTitle">movies</h1>
 
         <div class="field">
             <input id="searchInput" class="search" type="text" placeholder="search...">
@@ -351,6 +428,9 @@
         alert('Please set TMDB API key in the code');
     }
 
+    let currentType = 'movie'; // 'movie' or 'tv'
+    let currentTvShow = null; // Store current TV show for season/episode selection
+
     const backButton = document.querySelector('.back');
     const searchInput = document.getElementById('searchInput');
     const moviesContainer = document.getElementById('moviesContainer');
@@ -360,14 +440,27 @@
     const playerScreen = document.getElementById('playerScreen');
     const playerClose = document.querySelector('.player-close');
     const videoFrame = document.getElementById('videoFrame');
+    const typeSelector = document.getElementById('typeSelector');
     const urlParams = new URLSearchParams(window.location.search);
+
+    // Type selector handler
+    typeSelector.addEventListener('change', (e) => {
+        currentType = e.target.value;
+        moviesContainer.innerHTML = '';
+        noResults.style.display = 'none';
+        searchInput.value = '';
+        const pageTitle = document.getElementById('pageTitle');
+        const titleText = currentType === 'tv' ? 'tv shows' : 'movies';
+        pageTitle.textContent = titleText;
+        document.title = titleText + ' | compassplate';
+    });
 
     backButton.addEventListener('click', () => {
         window.location.href = '/index.html';
     });
 
     searchInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') searchMovies();
+        if (e.key === 'Enter') searchContent();
     });
 
     closeModal.addEventListener('click', () => {
@@ -386,10 +479,10 @@
     const initialQuery = urlParams.get('q');
     if (initialQuery) {
         searchInput.value = initialQuery;
-        searchMovies();
+        searchContent();
     }
 
-    async function searchMovies() {
+    async function searchContent() {
         const query = searchInput.value.trim();
         if (!query) {
             moviesContainer.innerHTML = '';
@@ -401,7 +494,8 @@
         noResults.style.display = 'none';
 
         try {
-            const response = await fetch(`${BASE_URL}/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(query)}`);
+            const endpoint = currentType === 'tv' ? 'search/tv' : 'search/movie';
+            const response = await fetch(`${BASE_URL}/${endpoint}?api_key=${API_KEY}&query=${encodeURIComponent(query)}`);
             const data = await response.json();
 
             if (!data.results || data.results.length === 0) {
@@ -411,21 +505,32 @@
             }
 
             moviesContainer.innerHTML = '';
-            data.results.forEach(movie => {
-                const posterPath = movie.poster_path ? IMG_BASE + movie.poster_path : '/placeholder.png';
+            data.results.forEach(item => {
+                const posterPath = item.poster_path ? IMG_BASE + item.poster_path : '/placeholder.png';
+                const title = currentType === 'tv' ? item.name : item.title;
+                const year = currentType === 'tv' 
+                    ? new Date(item.first_air_date).getFullYear() || 'N/A'
+                    : new Date(item.release_date).getFullYear() || 'N/A';
+
                 const card = document.createElement('div');
                 card.className = 'movie-card';
                 card.innerHTML = `
-                    <img src="${posterPath}" alt="${movie.title}" class="movie-poster">
-                    <div class="movie-title">${movie.title}</div>
-                    <div class="movie-year">${new Date(movie.release_date).getFullYear() || 'N/A'}</div>
+                    <img src="${posterPath}" alt="${title}" class="movie-poster">
+                    <div class="movie-title">${title}</div>
+                    <div class="movie-year">${year}</div>
                 `;
-                card.addEventListener('click', () => openMovieModal(movie));
+                card.addEventListener('click', () => {
+                    if (currentType === 'tv') {
+                        openTvShowModal(item);
+                    } else {
+                        openMovieModal(item);
+                    }
+                });
                 moviesContainer.appendChild(card);
             });
         } catch (error) {
-            console.error('Error fetching movies:', error);
-            moviesContainer.innerHTML = '<div class="no-results">Error loading movies. Make sure your API key is valid.</div>';
+            console.error('Error fetching content:', error);
+            moviesContainer.innerHTML = '<div class="no-results">Error loading content. Make sure your API key is valid.</div>';
         }
     }
 
@@ -449,8 +554,96 @@
         movieModal.classList.add('active');
     }
 
+    async function openTvShowModal(tvShow) {
+        const posterPath = tvShow.poster_path ? IMG_BASE + tvShow.poster_path : '/placeholder.png';
+        const firstAirDate = new Date(tvShow.first_air_date).getFullYear() || 'N/A';
+
+        currentTvShow = tvShow;
+
+        // Fetch seasons and episodes
+        try {
+            const response = await fetch(`${BASE_URL}/tv/${tvShow.id}?api_key=${API_KEY}`);
+            const details = await response.json();
+
+            const modalBody = document.getElementById('modalBody');
+            let seasonsHTML = '';
+
+            if (details.seasons && details.seasons.length > 0) {
+                seasonsHTML = '<div class="seasons-container"><label><strong>Select Season:</strong></label><select class="season-selector" id="seasonSelector" onchange="loadEpisodes()">';
+                details.seasons.forEach(season => {
+                    if (season.season_number >= 0) {
+                        seasonsHTML += `<option value="${season.season_number}">Season ${season.season_number}</option>`;
+                    }
+                });
+                seasonsHTML += '</select><div id="episodesList" class="episodes-list"></div></div>';
+            }
+
+            modalBody.innerHTML = `
+                <h2>${tvShow.name}</h2>
+                <div class="movie-details">
+                    <img src="${posterPath}" alt="${tvShow.name}">
+                    <div class="movie-info">
+                        <p><strong>First Air Date:</strong> ${firstAirDate}</p>
+                        <p><strong>Rating:</strong> ${tvShow.vote_average}/10</p>
+                        <p><strong>Overview:</strong> ${tvShow.overview || 'No overview available'}</p>
+                        ${seasonsHTML}
+                    </div>
+                </div>
+            `;
+
+            movieModal.classList.add('active');
+
+            // Load first season's episodes
+            if (details.seasons && details.seasons.length > 0) {
+                await loadEpisodes();
+            }
+        } catch (error) {
+            console.error('Error fetching TV show details:', error);
+            const modalBody = document.getElementById('modalBody');
+            modalBody.innerHTML = '<p>Error loading TV show details.</p>';
+            movieModal.classList.add('active');
+        }
+    }
+
+    async function loadEpisodes() {
+        const seasonSelector = document.getElementById('seasonSelector');
+        const episodesList = document.getElementById('episodesList');
+        const seasonNumber = parseInt(seasonSelector.value);
+
+        try {
+            const response = await fetch(`${BASE_URL}/tv/${currentTvShow.id}/season/${seasonNumber}?api_key=${API_KEY}`);
+            const seasonData = await response.json();
+
+            episodesList.innerHTML = '';
+
+            if (seasonData.episodes && seasonData.episodes.length > 0) {
+                seasonData.episodes.forEach(episode => {
+                    const episodeItem = document.createElement('div');
+                    episodeItem.className = 'episode-item';
+                    episodeItem.innerHTML = `
+                        <span class="episode-number">E${episode.episode_number}:</span> ${episode.name}
+                    `;
+                    episodeItem.addEventListener('click', () => playTvShow(currentTvShow.id, seasonNumber, episode.episode_number));
+                    episodesList.appendChild(episodeItem);
+                });
+            } else {
+                episodesList.innerHTML = '<div class="episode-item">No episodes available</div>';
+            }
+        } catch (error) {
+            console.error('Error fetching episodes:', error);
+            episodesList.innerHTML = '<div class="episode-item">Error loading episodes</div>';
+        }
+    }
+
     function playMovie(movieId) {
         const vidFastUrl = `https://vidfast.pro/movie/${movieId}?autoPlay=true`;
+        videoFrame.src = vidFastUrl;
+        playerScreen.classList.add('active');
+        movieModal.classList.remove('active');
+    }
+
+    function playTvShow(tvShowId, seasonNumber, episodeNumber) {
+        const vidFastUrl = `https://vidfast.pro/tv/${tvShowId}/${seasonNumber}/${episodeNumber}?autoPlay=true`;
         videoFrame.src = vidFastUrl;
         playerScreen.classList.add('active');
         movieModal.classList.remove('active');
