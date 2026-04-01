@@ -7,9 +7,9 @@
     }
   },
   "env": {
-    "VITE_SUPABASE_URL": "@vite_supabase_url",
-    "VITE_SUPABASE_KEY": "@vite_supabase_key",
-    "VITE_TMDB_API_KEY": "@vite_tmdb_api_key"
+    "VITE_SUPABASE_URL": "@VITE_SUPABASE_URL",
+    "VITE_SUPABASE_KEY": "@VITE_SUPABASE_KEY",
+    "VITE_TMDB_API_KEY": "@VITE_TMDB_API_KEY"
   },
   "redirects": [
     {
