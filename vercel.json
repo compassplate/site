@@ -1,0 +1,21 @@
+{
+  "buildCommand": "echo 'No build needed for static + serverless functions'",
+  "installCommand": "echo 'No dependencies to install'",
+  "framework": "other",
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "nodejs18.x"
+    }
+  },
+  "env": {
+    "VITE_SUPABASE_URL": "@vite_supabase_url",
+    "VITE_SUPABASE_KEY": "@vite_supabase_key",
+    "VITE_TMDB_API_KEY": "@vite_tmdb_api_key"
+  },
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/index.html"
+    }
+  ]
+}

@@ -299,6 +299,180 @@
         justify-content: center;
     }
 
+    .profile-section {
+        position: fixed;
+        top: 20px;
+        right: 240px;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+    }
+
+    .profile-pic {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        background-color: #333;
+        border: 2px solid white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5em;
+        transition: transform 0.2s;
+        object-fit: cover;
+    }
+
+    .profile-pic:hover {
+        transform: scale(1.1);
+    }
+
+    .profile-dropdown {
+        position: absolute;
+        top: 65px;
+        right: 0;
+        background-color: #1a1a1a;
+        border: 2px solid white;
+        border-radius: 5px;
+        min-width: 150px;
+        display: none;
+        flex-direction: column;
+        opacity: 0;
+        transform: translateY(-10px);
+        transition: opacity 0.3s, transform 0.3s;
+        z-index: 101;
+    }
+
+    .profile-dropdown.active {
+        display: flex;
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .profile-dropdown-item {
+        padding: 12px 20px;
+        color: white;
+        cursor: pointer;
+        border: none;
+        background: none;
+        text-align: left;
+        font-size: 1em;
+        transition: background-color 0.2s;
+        font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    }
+
+    .profile-dropdown-item:hover {
+        background-color: #333;
+    }
+
+    .profile-dropdown-item:first-child {
+        border-bottom: 1px solid #333;
+    }
+
+    .auth-modal {
+        display: none;
+        position: fixed;
+        z-index: 400;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.9);
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .auth-modal.active {
+        display: flex;
+    }
+
+    .auth-content {
+        background-color: #1a1a1a;
+        padding: 40px;
+        border: 2px solid white;
+        width: 90%;
+        max-width: 400px;
+        border-radius: 5px;
+        text-align: center;
+    }
+
+    .auth-content h2 {
+        margin-bottom: 30px;
+        font-size: 1.8em;
+    }
+
+    .auth-content input {
+        width: 100%;
+        padding: 12px 15px;
+        margin-bottom: 15px;
+        border: 2px solid white;
+        border-radius: 5px;
+        background-color: #2a2a2a;
+        color: white;
+        font-size: 1em;
+    }
+
+    .auth-content input::placeholder {
+        color: #888;
+    }
+
+    .auth-button {
+        width: 100%;
+        padding: 12px;
+        margin-bottom: 10px;
+        border: 2px solid white;
+        border-radius: 5px;
+        background: none;
+        color: white;
+        cursor: pointer;
+        font-size: 1em;
+        transition: background-color 0.3s;
+    }
+
+    .auth-button:hover {
+        background-color: #333;
+    }
+
+    .auth-button-google {
+        background-color: #4285F4;
+        border: 2px solid #4285F4;
+    }
+
+    .auth-button-google:hover {
+        background-color: #3367D6;
+    }
+
+    .auth-toggle {
+        margin-top: 20px;
+        font-size: 0.9em;
+        color: #aaa;
+    }
+
+    .auth-toggle button {
+        background: none;
+        border: none;
+        color: #e50914;
+        cursor: pointer;
+        text-decoration: underline;
+    }
+
+    .close-auth {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        color: white;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        background: none;
+        border: none;
+    }
+
+    .close-auth:hover {
+        color: #aaa;
+    }
+
     .player-screen.active {
         display: flex;
     }
@@ -387,6 +561,14 @@
 </head>
 <body>
     <button class="back">back</button>
+
+    <div class="profile-section">
+        <button id="profilePic" class="profile-pic">👤</button>
+        <div id="profileDropdown" class="profile-dropdown">
+            <button id="accountBtn" class="profile-dropdown-item">Account</button>
+            <button id="logoutBtn" class="profile-dropdown-item">Log Out</button>
+        </div>
+    </div>
     
     <select id="typeSelector" class="type-selector">
         <option value="movie">Movies</option>
@@ -419,13 +601,234 @@
         <iframe id="videoFrame" class="video-frame" allow="fullscreen" allowfullscreen></iframe>
     </div>
 
+    <div id="authModal" class="auth-modal">
+        <button class="close-auth">&times;</button>
+        <div class="auth-content">
+            <h2 id="authTitle">Sign In</h2>
+            <input id="authEmail" type="email" placeholder="Email" style="display: none;">
+            <input id="authPassword" type="password" placeholder="Password" style="display: none;">
+            <button id="authSubmitBtn" class="auth-button">Sign In with Email</button>
+            <button id="authGoogleBtn" class="auth-button auth-button-google">Sign In with Google</button>
+            <div class="auth-toggle" id="authToggle">
+                Don't have an account? <button id="toggleSignupBtn">Sign Up</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/env.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-    const API_KEY = 'fd0954d08e011aebbba749fee1e4a4b5';
+    const supabase = window.supabase.createClient(ENV.SUPABASE_URL, ENV.SUPABASE_KEY);
+
+    let currentUser = null;
+    let isSignupMode = false;
+
+    async function checkAuth() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        currentUser = session.user;
+        updateProfileUI();
+      } else {
+        updateProfileUI();
+      }
+    }
+
+    function updateProfileUI() {
+      const profilePic = document.getElementById('profilePic');
+      if (currentUser) {
+        profilePic.textContent = currentUser.email.charAt(0).toUpperCase();
+        profilePic.style.backgroundColor = generateColorFromEmail(currentUser.email);
+      } else {
+        profilePic.textContent = '👤';
+        profilePic.style.backgroundColor = '#333';
+      }
+    }
+
+    function generateColorFromEmail(email) {
+      let hash = 0;
+      for (let i = 0; i < email.length; i++) {
+        hash = email.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const hue = hash % 360;
+      return `hsl(${hue}, 70%, 50%)`;
+    }
+
+    const profilePic = document.getElementById('profilePic');
+    const profileDropdown = document.getElementById('profileDropdown');
+
+    profilePic.addEventListener('click', () => {
+      if (!currentUser) {
+        document.getElementById('authModal').classList.add('active');
+      } else {
+        profileDropdown.classList.toggle('active');
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.profile-section')) {
+        profileDropdown.classList.remove('active');
+      }
+    });
+
+    // Auth Modal elements
+    const authModal = document.getElementById('authModal');
+    const closeAuthBtn = document.querySelector('.close-auth');
+    const authTitle = document.getElementById('authTitle');
+    const authEmail = document.getElementById('authEmail');
+    const authPassword = document.getElementById('authPassword');
+    const authSubmitBtn = document.getElementById('authSubmitBtn');
+    const authGoogleBtn = document.getElementById('authGoogleBtn');
+    const toggleSignupBtn = document.getElementById('toggleSignupBtn');
+    const accountBtn = document.getElementById('accountBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    closeAuthBtn.addEventListener('click', () => {
+      authModal.classList.remove('active');
+    });
+
+    authModal.addEventListener('click', (e) => {
+      if (e.target === authModal) {
+        authModal.classList.remove('active');
+      }
+    });
+
+    toggleSignupBtn.addEventListener('click', () => {
+      isSignupMode = !isSignupMode;
+      if (isSignupMode) {
+        authTitle.textContent = 'Sign Up';
+        authEmail.style.display = 'block';
+        authPassword.style.display = 'block';
+        authSubmitBtn.textContent = 'Sign Up with Email';
+        toggleSignupBtn.textContent = 'Sign In';
+      } else {
+        authTitle.textContent = 'Sign In';
+        authEmail.style.display = 'block';
+        authPassword.style.display = 'block';
+        authSubmitBtn.textContent = 'Sign In with Email';
+        toggleSignupBtn.textContent = 'Sign Up';
+      }
+    });
+
+    authSubmitBtn.addEventListener('click', async () => {
+      const email = authEmail.value.trim();
+      const password = authPassword.value.trim();
+
+      if (!email || !password) {
+        alert('Please fill in all fields');
+        return;
+      }
+
+      try {
+        if (isSignupMode) {
+          const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              emailRedirectTo: `${window.location.origin}/pages/movies/`
+            }
+          });
+          if (error) throw error;
+          alert('Check your email to confirm your account');
+          authModal.classList.remove('active');
+        } else {
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password
+          });
+          if (error) throw error;
+          currentUser = data.session.user;
+          updateProfileUI();
+          authModal.classList.remove('active');
+        }
+      } catch (error) {
+        alert('Authentication error: ' + error.message);
+      }
+    });
+
+    authGoogleBtn.addEventListener('click', async () => {
+      try {
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: `${window.location.origin}/pages/movies/`
+          }
+        });
+        if (error) throw error;
+      } catch (error) {
+        alert('Google sign in error: ' + error.message);
+      }
+    });
+
+    accountBtn.addEventListener('click', () => {
+      alert(`Logged in as: ${currentUser.email}\n\nWatch history is being tracked automatically!`);
+      profileDropdown.classList.remove('active');
+    });
+
+    // Logout
+    logoutBtn.addEventListener('click', async () => {
+      try {
+        await supabase.auth.signOut();
+        currentUser = null;
+        updateProfileUI();
+        profileDropdown.classList.remove('active');
+      } catch (error) {
+        alert('Logout error: ' + error.message);
+      }
+    });
+
+    // Watch history tracking
+    async function trackWatchHistory(mediaId, mediaType, title, posterPath, season = null, episode = null) {
+      if (!currentUser) return;
+
+      try {
+        const { error } = await supabase
+          .from('watch_history')
+          .upsert({
+            user_id: currentUser.id,
+            media_id: mediaId,
+            media_type: mediaType,
+            title: title,
+            poster_path: posterPath,
+            current_season: season,
+            current_episode: episode,
+            last_watched: new Date().toISOString()
+          }, { onConflict: 'user_id,media_id,media_type' });
+
+        if (error) throw error;
+        console.log('[Watch History] Tracked:', title);
+      } catch (error) {
+        console.error('[Watch History Error]:', error);
+      }
+    }
+
+    // Initialize on page load
+    checkAuth();
+    </script>
+    <script>
+    // Register service worker for ad blocking
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/service-worker.js').then(reg => {
+        console.log('[AdBlocker] Service Worker registered successfully');
+      }).catch(err => {
+        console.warn('[AdBlocker] Service Worker registration failed:', err);
+      });
+    }
+
+    // Block suspicious meta redirects
+    function removeRedirectMeta() {
+      document.querySelectorAll('meta[http-equiv="refresh"]').forEach(el => el.remove());
+      document.querySelectorAll('meta[http-equiv="X-UA-Compatible"]').forEach(el => {
+        if (el.content && el.content.includes('redirect')) el.remove();
+      });
+    }
+
+    const API_KEY = ENV.TMDB_API_KEY;
     const BASE_URL = 'https://api.themoviedb.org/3';
     const IMG_BASE = 'https://image.tmdb.org/t/p/w500';
 
-    if (API_KEY === 'TMDB_API_KEY' || !API_KEY) {
-        alert('Please set TMDB API key in the code');
+    // Validate that environment variables are loaded
+    if (!API_KEY || !ENV.SUPABASE_URL || !ENV.SUPABASE_KEY) {
+        console.error('[Config] Missing required environment variables. Check your .env file.');
     }
 
     let currentType = 'movie'; // 'movie' or 'tv'
@@ -640,6 +1043,11 @@
         videoFrame.src = vidFastUrl;
         playerScreen.classList.add('active');
         movieModal.classList.remove('active');
+
+        // Track in watch history
+        const posterPath = document.querySelector('.movie-poster')?.src;
+        const title = document.querySelector('.movie-details h2')?.textContent || 'Unknown Movie';
+        trackWatchHistory(movieId, 'movie', title, posterPath);
     }
 
     function playTvShow(tvShowId, seasonNumber, episodeNumber) {
@@ -647,6 +1055,11 @@
         videoFrame.src = vidFastUrl;
         playerScreen.classList.add('active');
         movieModal.classList.remove('active');
+
+        // Track in watch history
+        const title = currentTvShow?.name || 'Unknown Show';
+        const posterPath = currentTvShow?.poster_path ? IMG_BASE + currentTvShow.poster_path : '';
+        trackWatchHistory(tvShowId, 'tv', title, posterPath, seasonNumber, episodeNumber);
     }
     </script>
 </body>
