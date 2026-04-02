@@ -557,6 +557,73 @@
             margin: 0 auto;
         }
     }
+
+    .content-section {
+        margin-bottom: 40px;
+    }
+
+    .section-title {
+        font-size: 1.5em;
+        margin-bottom: 20px;
+        font-weight: bold;
+        text-transform: capitalize;
+    }
+
+    .section-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 15px;
+        margin-bottom: 30px;
+    }
+
+    .content-card {
+        position: relative;
+        overflow: hidden;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: transform 0.3s ease;
+    }
+
+    .content-card:hover {
+        transform: scale(1.05);
+    }
+
+    .content-card img {
+        width: 100%;
+        height: 240px;
+        object-fit: cover;
+        display: block;
+    }
+
+    .content-card-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .content-card:hover .content-card-overlay {
+        opacity: 1;
+    }
+
+    .content-card-title {
+        text-align: center;
+        padding: 10px;
+        font-size: 0.9em;
+    }
+
+    .loader {
+        text-align: center;
+        padding: 20px;
+        color: #888;
+    }
     </style>
 </head>
 <body>
@@ -579,6 +646,24 @@
     
     <div class="container">
         <h1 id="pageTitle">movies</h1>
+
+        <!-- Recently Watched Section -->
+        <div id="recentlyWatchedSection" class="content-section" style="display: none;">
+            <div class="section-title">Recently Watched</div>
+            <div id="recentlyWatchedGrid" class="section-grid"></div>
+        </div>
+
+        <!-- Recommended Section -->
+        <div id="recommendedSection" class="content-section" style="display: none;">
+            <div class="section-title">Recommended For You</div>
+            <div id="recommendedGrid" class="section-grid"></div>
+        </div>
+
+        <!-- Popular Section -->
+        <div id="popularSection" class="content-section">
+            <div class="section-title">Popular</div>
+            <div id="popularGrid" class="section-grid"></div>
+        </div>
 
         <div class="field">
             <input id="searchInput" class="search" type="text" placeholder="search...">
@@ -657,9 +742,21 @@
     function updateProfileUI() {
       const profilePic = document.getElementById('profilePic');
       if (currentUser) {
-        profilePic.textContent = currentUser.email.charAt(0).toUpperCase();
-        profilePic.style.backgroundColor = generateColorFromEmail(currentUser.email);
+        if (currentUser.photoURL) {
+          // Use Google profile picture
+          profilePic.style.backgroundImage = `url(${currentUser.photoURL})`;
+          profilePic.style.backgroundSize = 'cover';
+          profilePic.style.backgroundPosition = 'center';
+          profilePic.textContent = '';
+          profilePic.style.backgroundColor = 'transparent';
+        } else {
+          // Use first letter of email with generated color
+          profilePic.style.backgroundImage = 'none';
+          profilePic.textContent = currentUser.email.charAt(0).toUpperCase();
+          profilePic.style.backgroundColor = generateColorFromEmail(currentUser.email);
+        }
       } else {
+        profilePic.style.backgroundImage = 'none';
         profilePic.textContent = '👤';
         profilePic.style.backgroundColor = '#333';
       }
@@ -827,17 +924,6 @@
     const typeSelector = document.getElementById('typeSelector');
     const urlParams = new URLSearchParams(window.location.search);
 
-    typeSelector.addEventListener('change', (e) => {
-        currentType = e.target.value;
-        moviesContainer.innerHTML = '';
-        noResults.style.display = 'none';
-        searchInput.value = '';
-        const pageTitle = document.getElementById('pageTitle');
-        const titleText = currentType === 'tv' ? 'tv shows' : 'movies';
-        pageTitle.textContent = titleText;
-        document.title = titleText + ' | compassplate';
-    });
-
     backButton.addEventListener('click', () => {
         window.location.href = '/index.html';
     });
@@ -864,6 +950,123 @@
         searchInput.value = initialQuery;
         searchContent();
     }
+
+    // Helper function to create content cards
+    function createContentCard(item, type = 'movie') {
+        const posterPath = item.poster_path ? IMG_BASE + item.poster_path : '/placeholder.png';
+        const title = type === 'tv' ? item.name : item.title;
+        
+        const card = document.createElement('div');
+        card.className = 'content-card';
+        card.innerHTML = `
+            <img src="${posterPath}" alt="${title}">
+            <div class="content-card-overlay">
+                <div class="content-card-title">${title}</div>
+            </div>
+        `;
+        card.addEventListener('click', () => {
+            if (type === 'tv') {
+                openTvShowModal(item);
+            } else {
+                openMovieModal(item);
+            }
+            // Track as watched
+            addToRecentlyWatched(item.id, type, title, item.poster_path);
+        });
+        return card;
+    }
+
+    // Recently watched management (localStorage based)
+    function addToRecentlyWatched(id, type, title, posterPath) {
+        if (!currentUser) return;
+        
+        const key = 'recentlyWatched_' + currentUser.uid;
+        let watched = JSON.parse(localStorage.getItem(key) || '[]');
+        
+        // Remove if already exists
+        watched = watched.filter(item => !(item.id === id && item.type === type));
+        
+        // Add to front
+        watched.unshift({
+            id,
+            type,
+            title,
+            posterPath,
+            watchedAt: new Date().toISOString()
+        });
+        
+        // Keep only last 10
+        watched = watched.slice(0, 10);
+        localStorage.setItem(key, JSON.stringify(watched));
+    }
+
+    function displayRecentlyWatched() {
+        const section = document.getElementById('recentlyWatchedSection');
+        const grid = document.getElementById('recentlyWatchedGrid');
+        
+        if (!currentUser) {
+            section.style.display = 'none';
+            return;
+        }
+        
+        const key = 'recentlyWatched_' + currentUser.uid;
+        const watched = JSON.parse(localStorage.getItem(key) || '[]');
+        
+        if (watched.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+        
+        grid.innerHTML = '';
+        watched.forEach(item => {
+            const posterPath = item.posterPath ? IMG_BASE + item.posterPath : '/placeholder.png';
+            const card = document.createElement('div');
+            card.className = 'content-card';
+            card.innerHTML = `
+                <img src="${posterPath}" alt="${item.title}">
+                <div class="content-card-overlay">
+                    <div class="content-card-title">${item.title}</div>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+        section.style.display = 'block';
+    }
+
+    async function loadPopularContent() {
+        try {
+            const section = document.getElementById('popularSection');
+            const grid = document.getElementById('popularGrid');
+            
+            grid.innerHTML = '<div class="loader" style="grid-column: 1/-1;">Loading...</div>';
+            
+            const endpoint = currentType === 'tv' ? 'tv/popular' : 'movie/popular';
+            const response = await fetch(`${BASE_URL}/${endpoint}?api_key=${API_KEY}&page=1`);
+            const data = await response.json();
+            
+            grid.innerHTML = '';
+            if (data.results) {
+                data.results.slice(0, 12).forEach(item => {
+                    grid.appendChild(createContentCard(item, currentType));
+                });
+            }
+        } catch (error) {
+            console.error('Error loading popular content:', error);
+        }
+    }
+
+    // Update type selector to reload content
+    typeSelector.addEventListener('change', async (e) => {
+        currentType = e.target.value;
+        moviesContainer.innerHTML = '';
+        noResults.style.display = 'none';
+        searchInput.value = '';
+        const pageTitle = document.getElementById('pageTitle');
+        const titleText = currentType === 'tv' ? 'tv shows' : 'movies';
+        pageTitle.textContent = titleText;
+        document.title = titleText + ' | compassplate';
+        await loadPopularContent();
+    });
 
     async function searchContent() {
         const query = searchInput.value.trim();
@@ -1034,6 +1237,17 @@
         const posterPath = currentTvShow?.poster_path ? IMG_BASE + currentTvShow.poster_path : '';
         trackWatchHistory(tvShowId, 'tv', title, posterPath, seasonNumber, episodeNumber);
     }
+
+    // Initialize homepage with popular content and recently watched
+    displayRecentlyWatched();
+    loadPopularContent();
+
+    // Re-display recently watched when auth state changes
+    const originalUpdateProfileUI = window.updateProfileUI;
+    window.updateProfileUI = function() {
+        originalUpdateProfileUI();
+        displayRecentlyWatched();
+    };
     })();
     </script>
 </body>
