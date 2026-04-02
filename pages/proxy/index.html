@@ -13,7 +13,7 @@
 
     body {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        background: #000;
         color: #fff;
         min-height: 100vh;
         display: flex;
@@ -74,7 +74,6 @@
         width: 120px;
         height: 120px;
         margin-bottom: 30px;
-        animation: spin 3s linear infinite;
     }
 
     @keyframes spin {
@@ -430,7 +429,7 @@
     const reloadBtn = document.getElementById('reloadBtn');
     const proxyContent = document.getElementById('proxyContent');
 
-    let history = [];
+    let urlHistory = [];
     let currentHistoryIndex = -1;
     let botCheckPassed = false;
     let checksComplete = false;
@@ -565,8 +564,8 @@
                 proxyContent.appendChild(pre);
             }
 
-            history.push(url);
-            currentHistoryIndex = history.length - 1;
+            urlHistory.push(url);
+            currentHistoryIndex = urlHistory.length - 1;
             updateNavButtons();
 
         } catch (error) {
@@ -581,7 +580,7 @@
 
     function updateNavButtons() {
         navBackBtn.disabled = currentHistoryIndex <= 0;
-        navForwardBtn.disabled = currentHistoryIndex >= history.length - 1;
+        navForwardBtn.disabled = currentHistoryIndex >= urlHistory.length - 1;
     }
 
     goBtn.addEventListener('click', () => {
@@ -599,526 +598,22 @@
     navBackBtn.addEventListener('click', () => {
         if (currentHistoryIndex > 0) {
             currentHistoryIndex--;
-            urlInput.value = history[currentHistoryIndex];
-            proxyUrl(history[currentHistoryIndex]);
+            urlInput.value = urlHistory[currentHistoryIndex];
+            proxyUrl(urlHistory[currentHistoryIndex]);
         }
     });
 
     navForwardBtn.addEventListener('click', () => {
-        if (currentHistoryIndex < history.length - 1) {
+        if (currentHistoryIndex < urlHistory.length - 1) {
             currentHistoryIndex++;
-            urlInput.value = history[currentHistoryIndex];
-            proxyUrl(history[currentHistoryIndex]);
+            urlInput.value = urlHistory[currentHistoryIndex];
+            proxyUrl(urlHistory[currentHistoryIndex]);
         }
     });
 
     reloadBtn.addEventListener('click', () => {
         if (currentHistoryIndex >= 0) {
-            proxyUrl(history[currentHistoryIndex]);
-        }
-    });
-
-    runInitialChecks();
-    </script>
-</body>
-</html>
-    <style>
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
-
-    body {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background-color: #1e1e1e;
-        color: #fff;
-        height: 100vh;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .header {
-        background-color: #2d2d2d;
-        border-bottom: 1px solid #444;
-        padding: 12px 20px;
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        flex-wrap: wrap;
-    }
-
-    .nav-buttons {
-        display: flex;
-        gap: 8px;
-    }
-
-    .nav-btn {
-        width: 36px;
-        height: 36px;
-        border: none;
-        background-color: #3a3a3a;
-        color: #fff;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 16px;
-        transition: background-color 0.2s;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .nav-btn:hover:not(:disabled) {
-        background-color: #4a4a4a;
-    }
-
-    .nav-btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    .address-bar {
-        flex: 1;
-        min-width: 250px;
-        display: flex;
-        gap: 8px;
-        align-items: center;
-    }
-
-    .url-input {
-        flex: 1;
-        padding: 8px 12px;
-        background-color: #3a3a3a;
-        border: 1px solid #555;
-        border-radius: 6px;
-        color: #fff;
-        font-size: 14px;
-    }
-
-    .url-input:focus {
-        outline: none;
-        border-color: #007acc;
-        background-color: #444;
-    }
-
-    .go-btn {
-        padding: 8px 16px;
-        background-color: #007acc;
-        border: none;
-        color: #fff;
-        border-radius: 6px;
-        cursor: pointer;
-        font-weight: 500;
-        transition: background-color 0.2s;
-    }
-
-    .go-btn:hover {
-        background-color: #008fd9;
-    }
-
-    .content-area {
-        display: flex;
-        flex: 1;
-        gap: 20px;
-        padding: 20px;
-        overflow: hidden;
-    }
-
-    .status-panel {
-        width: 300px;
-        background-color: #2d2d2d;
-        border: 1px solid #444;
-        border-radius: 8px;
-        padding: 16px;
-        overflow-y: auto;
-        flex-shrink: 0;
-    }
-
-    .status-title {
-        font-size: 16px;
-        font-weight: 600;
-        margin-bottom: 16px;
-        color: #4ec9b0;
-    }
-
-    .status-item {
-        margin-bottom: 12px;
-        padding: 10px;
-        background-color: #1e1e1e;
-        border-radius: 6px;
-        border-left: 3px solid #555;
-    }
-
-    .status-item.pending {
-        border-left-color: #ce9178;
-        color: #ce9178;
-    }
-
-    .status-item.success {
-        border-left-color: #6a9955;
-        color: #6a9955;
-    }
-
-    .status-item.error {
-        border-left-color: #f48771;
-        color: #f48771;
-    }
-
-    .status-label {
-        font-weight: 500;
-        margin-bottom: 4px;
-    }
-
-    .status-message {
-        font-size: 12px;
-        opacity: 0.8;
-    }
-
-    .spinner {
-        display: inline-block;
-        width: 4px;
-        height: 4px;
-        background-color: currentColor;
-        border-radius: 50%;
-        margin-right: 6px;
-        animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-
-    .proxy-container {
-        flex: 1;
-        background-color: #2d2d2d;
-        border: 1px solid #444;
-        border-radius: 8px;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-    }
-
-    .proxy-content {
-        flex: 1;
-        overflow: auto;
-        position: relative;
-    }
-
-    .proxy-frame {
-        width: 100%;
-        height: 100%;
-        border: none;
-        background-color: #fff;
-    }
-
-    .proxy-empty {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        color: #888;
-        text-align: center;
-        flex-direction: column;
-        gap: 16px;
-    }
-
-    .proxy-empty-icon {
-        font-size: 48px;
-        opacity: 0.5;
-    }
-
-    .proxy-empty-text {
-        font-size: 16px;
-    }
-
-    .loading-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: rgba(0, 0, 0, 0.7);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 1000;
-        border-radius: 8px;
-    }
-
-    .loading-spinner {
-        font-size: 48px;
-        animation: bounce 1s ease-in-out infinite;
-    }
-
-    @keyframes bounce {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-10px); }
-    }
-
-    .back-btn {
-        position: fixed;
-        top: 20px;
-        left: 20px;
-        background: none;
-        border: 2px solid white;
-        color: white;
-        padding: 5px 10px;
-        cursor: pointer;
-        font-size: 1em;
-        border-radius: 5px;
-        z-index: 100;
-    }
-
-    .back-btn:hover {
-        background-color: rgba(255, 255, 255, 0.1);
-    }
-
-    @media (max-width: 768px) {
-        .content-area {
-            flex-direction: column;
-        }
-
-        .status-panel {
-            width: 100%;
-            max-height: 200px;
-        }
-
-        .header {
-            flex-direction: column;
-            align-items: stretch;
-        }
-
-        .address-bar {
-            width: 100%;
-        }
-    }
-    </style>
-</head>
-<body>
-    <button class="back-btn">back</button>
-
-    <div class="header">
-        <div class="nav-buttons">
-            <button class="nav-btn" id="backBtn" title="Back">←</button>
-            <button class="nav-btn" id="forwardBtn" title="Forward">→</button>
-            <button class="nav-btn" id="reloadBtn" title="Reload">⟳</button>
-        </div>
-        <div class="address-bar">
-            <input type="text" class="url-input" id="urlInput" placeholder="Enter URL to proxy...">
-            <button class="go-btn" id="goBtn">GO</button>
-        </div>
-    </div>
-
-    <div class="content-area">
-        <div class="status-panel">
-            <div class="status-title">System Status</div>
-            <div id="statusContainer"></div>
-        </div>
-
-        <div class="proxy-container">
-            <div class="proxy-content" id="proxyContent">
-                <div class="proxy-empty">
-                    <div class="proxy-empty-icon">🌐</div>
-                    <div class="proxy-empty-text">Enter a URL to proxy</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-    const statusContainer = document.getElementById('statusContainer');
-    const urlInput = document.getElementById('urlInput');
-    const goBtn = document.getElementById('goBtn');
-    const backBtn = document.querySelector('.back-btn');
-    const navBackBtn = document.getElementById('backBtn');
-    const navForwardBtn = document.getElementById('forwardBtn');
-    const reloadBtn = document.getElementById('reloadBtn');
-    const proxyContent = document.getElementById('proxyContent');
-
-    let history = [];
-    let currentHistoryIndex = -1;
-    let botCheckPassed = false;
-
-    const backButton = document.querySelector('.back-btn');
-    backButton.addEventListener('click', () => {
-        window.location.href = '/index.html';
-    });
-
-    function addStatus(id, label, state, message) {
-        let item = document.getElementById(`status-${id}`);
-        if (!item) {
-            item = document.createElement('div');
-            item.id = `status-${id}`;
-            item.className = `status-item ${state}`;
-            statusContainer.appendChild(item);
-        }
-        item.className = `status-item ${state}`;
-        item.innerHTML = `
-            <div class="status-label">
-                ${state === 'pending' ? '<span class="spinner"></span>' : ''}
-                ${state === 'success' ? '✓' : state === 'error' ? '✗' : ''} ${label}
-            </div>
-            ${message ? `<div class="status-message">${message}</div>` : ''}
-        `;
-    }
-
-    async function runInitialChecks() {
-        addStatus('check1', 'Checking Scramjet', 'pending', 'Verifying installation...');
-        await new Promise(r => setTimeout(r, 800));
-
-        try {
-            const response = await fetch('/api/scramjet-status');
-            if (response.ok) {
-                addStatus('check1', 'Scramjet Installed', 'success', 'v4.36.2');
-            } else {
-                throw new Error('Not available');
-            }
-        } catch {
-            addStatus('check1', 'Scramjet Installed', 'error', 'Not found');
-        }
-
-        addStatus('check2', 'Testing Functionality', 'pending', 'Running diagnostics...');
-        await new Promise(r => setTimeout(r, 1000));
-
-        try {
-            const response = await fetch('/api/scramjet-test');
-            if (response.ok) {
-                addStatus('check2', 'Scramjet Active', 'success', 'Fully operational');
-            } else {
-                throw new Error('Not functional');
-            }
-        } catch {
-            addStatus('check2', 'Scramjet Active', 'error', 'Not responding');
-        }
-
-        addStatus('check3', 'Verifying User', 'pending', 'Checking credentials...');
-        await new Promise(r => setTimeout(r, 600));
-
-        const headers = new Headers();
-        headers.append('User-Agent', navigator.userAgent);
-        headers.append('Accept-Language', navigator.language);
-
-        try {
-            const response = await fetch('/api/verify-user', { headers });
-            if (response.ok) {
-                botCheckPassed = true;
-                addStatus('check3', 'User Verified', 'success', 'Real user detected');
-            } else {
-                throw new Error('Verification failed');
-            }
-        } catch {
-            addStatus('check3', 'User Verified', 'error', 'Could not verify');
-        }
-
-        if (!botCheckPassed) {
-            addStatus('check4', 'Proxy Ready', 'error', 'User verification failed');
-            goBtn.disabled = true;
-            return;
-        }
-
-        addStatus('check4', 'Proxy Ready', 'success', 'System initialized');
-    }
-
-    async function proxyUrl(url) {
-        if (!botCheckPassed) {
-            alert('User verification failed. Please refresh the page.');
-            return;
-        }
-
-        if (!url.match(/^https?:\/\//i)) {
-            url = 'https://' + url;
-        }
-
-        urlInput.value = url;
-        addStatus('check5', 'Fetching URL', 'pending', 'Requesting...');
-
-        const loadingOverlay = document.createElement('div');
-        loadingOverlay.className = 'loading-overlay';
-        loadingOverlay.innerHTML = '<div class="loading-spinner">⟳</div>';
-        proxyContent.style.position = 'relative';
-        proxyContent.appendChild(loadingOverlay);
-
-        try {
-            const response = await fetch('/api/proxy', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url })
-            });
-
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-            const data = await response.json();
-            addStatus('check5', 'Proxy Complete', 'success', 'Content loaded');
-
-            proxyContent.innerHTML = '';
-
-            if (data.type === 'html') {
-                const iframe = document.createElement('iframe');
-                iframe.className = 'proxy-frame';
-                iframe.srcdoc = data.content;
-                proxyContent.appendChild(iframe);
-            } else if (data.type === 'text') {
-                const pre = document.createElement('pre');
-                pre.style.cssText = 'padding: 20px; white-space: pre-wrap; word-wrap: break-word; color: #333; background: #fff;';
-                pre.textContent = data.content;
-                proxyContent.appendChild(pre);
-            }
-
-            history.push(url);
-            currentHistoryIndex = history.length - 1;
-            updateNavButtons();
-
-        } catch (error) {
-            addStatus('check5', 'Proxy Error', 'error', error.message);
-            proxyContent.innerHTML = `
-                <div class="proxy-empty">
-                    <div class="proxy-empty-icon">❌</div>
-                    <div class="proxy-empty-text">Error: ${error.message}</div>
-                </div>
-            `;
-        } finally {
-            loadingOverlay.remove();
-        }
-    }
-
-    function updateNavButtons() {
-        navBackBtn.disabled = currentHistoryIndex <= 0;
-        navForwardBtn.disabled = currentHistoryIndex >= history.length - 1;
-    }
-
-    goBtn.addEventListener('click', () => {
-        const url = urlInput.value.trim();
-        if (url) proxyUrl(url);
-    });
-
-    urlInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            const url = urlInput.value.trim();
-            if (url) proxyUrl(url);
-        }
-    });
-
-    navBackBtn.addEventListener('click', () => {
-        if (currentHistoryIndex > 0) {
-            currentHistoryIndex--;
-            urlInput.value = history[currentHistoryIndex];
-            proxyUrl(history[currentHistoryIndex]);
-        }
-    });
-
-    navForwardBtn.addEventListener('click', () => {
-        if (currentHistoryIndex < history.length - 1) {
-            currentHistoryIndex++;
-            urlInput.value = history[currentHistoryIndex];
-            proxyUrl(history[currentHistoryIndex]);
-        }
-    });
-
-    reloadBtn.addEventListener('click', () => {
-        if (currentHistoryIndex >= 0) {
-            proxyUrl(history[currentHistoryIndex]);
+            proxyUrl(urlHistory[currentHistoryIndex]);
         }
     });
 
