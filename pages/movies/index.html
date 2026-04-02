@@ -1187,7 +1187,7 @@
         }
     }
 
-    async function loadEpisodes() {
+    window.loadEpisodes = async function() {
         const seasonSelector = document.getElementById('seasonSelector');
         const episodesList = document.getElementById('episodesList');
         const seasonNumber = parseInt(seasonSelector.value);
@@ -1205,7 +1205,7 @@
                     episodeItem.innerHTML = `
                         <span class="episode-number">E${episode.episode_number}:</span> ${episode.name}
                     `;
-                    episodeItem.addEventListener('click', () => playTvShow(currentTvShow.id, seasonNumber, episode.episode_number));
+                    episodeItem.addEventListener('click', () => window.playTvShow(currentTvShow.id, seasonNumber, episode.episode_number));
                     episodesList.appendChild(episodeItem);
                 });
             } else {
@@ -1214,9 +1214,9 @@
         } catch (error) {
             episodesList.innerHTML = '<div class="episode-item">Error loading episodes</div>';
         }
-    }
+    };
 
-    function playMovie(movieId) {
+    window.playMovie = function(movieId) {
         const vidFastUrl = `https://vidfast.pro/movie/${movieId}?autoPlay=true`;
         videoFrame.src = vidFastUrl;
         playerScreen.classList.add('active');
@@ -1225,9 +1225,9 @@
         const posterPath = document.querySelector('.movie-poster')?.src;
         const title = document.querySelector('.movie-details h2')?.textContent || 'Unknown Movie';
         trackWatchHistory(movieId, 'movie', title, posterPath);
-    }
+    };
 
-    function playTvShow(tvShowId, seasonNumber, episodeNumber) {
+    window.playTvShow = function(tvShowId, seasonNumber, episodeNumber) {
         const vidFastUrl = `https://vidfast.pro/tv/${tvShowId}/${seasonNumber}/${episodeNumber}?autoPlay=true`;
         videoFrame.src = vidFastUrl;
         playerScreen.classList.add('active');
@@ -1236,7 +1236,7 @@
         const title = currentTvShow?.name || 'Unknown Show';
         const posterPath = currentTvShow?.poster_path ? IMG_BASE + currentTvShow.poster_path : '';
         trackWatchHistory(tvShowId, 'tv', title, posterPath, seasonNumber, episodeNumber);
-    }
+    };
 
     // Initialize homepage with popular content and recently watched
     displayRecentlyWatched();
