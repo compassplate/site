@@ -616,68 +616,43 @@
     </div>
 
     <script src="/env.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js"></script>
     <script>
-    let supabaseClient = null;
-
     let currentUser = null;
     let isSignupMode = false;
+    let auth = null;
 
-    supabaseClient_unsubscribe = null;
+    async function initializeFirebase() {
+      await waitForConfig();
+      const firebaseConfig = {
+        apiKey: ENV.FIREBASE_API_KEY,
+        authDomain: ENV.FIREBASE_AUTH_DOMAIN,
+        projectId: ENV.FIREBASE_PROJECT_ID,
+        storageBucket: ENV.FIREBASE_STORAGE_BUCKET,
+        messagingSenderId: ENV.FIREBASE_MESSAGING_SENDER_ID,
+        appId: ENV.FIREBASE_APP_ID,
+        measurementId: ENV.FIREBASE_MEASUREMENT_ID
+      };
+      const app = firebase.initializeApp(firebaseConfig);
+      auth = firebase.auth();
 
-    function setupAuthListener() {
-      if (!supabaseClient || supabaseClient_unsubscribe) return;
-      
-      supabaseClient_unsubscribe = supabaseClient.auth.onAuthStateChange((event, session) => {
-        if (session?.user) {
-          currentUser = session.user;
+      auth.onAuthStateChanged(user => {
+        if (user) {
+          currentUser = user;
           updateProfileUI();
-          if (window.location.hash.includes('access_token') || window.location.hash.includes('error')) {
-            window.history.replaceState({}, document.title, window.location.pathname);
-          }
-          if (document.getElementById('authModal').classList.contains('active')) {
-            document.getElementById('authModal').classList.remove('active');
+          const authModal = document.getElementById('authModal');
+          if (authModal && authModal.classList.contains('active')) {
+            authModal.classList.remove('active');
           }
         } else {
           currentUser = null;
           updateProfileUI();
         }
       });
-      
-      supabaseClient.auth.getSession().then(({ data: { session } }) => {
-        if (session?.user) {
-          currentUser = session.user;
-          updateProfileUI();
-          if (window.location.hash.includes('access_token') || window.location.hash.includes('error')) {
-            window.history.replaceState({}, document.title, window.location.pathname);
-          }
-        }
-      });
     }
 
-    async function processOAuthHash() {
-      if (!window.location.hash.includes('access_token')) return;
-      if (sessionStorage.getItem('oauth_processing')) return;
-      
-      try {
-        sessionStorage.setItem('oauth_processing', 'true');
-        await new Promise(r => setTimeout(r, 1000));
-        window.location.href = window.location.pathname;
-      } catch (err) {
-        sessionStorage.removeItem('oauth_processing');
-      }
-    }
-
-    async function checkAuth() {
-      if (!supabaseClient) return;
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      if (session) {
-        currentUser = session.user;
-        updateProfileUI();
-      } else {
-        updateProfileUI();
-      }
-    }
+    initializeFirebase();
 
     function updateProfileUI() {
       const profilePic = document.getElementById('profilePic');
@@ -754,10 +729,6 @@
     });
 
     authSubmitBtn.addEventListener('click', async () => {
-      if (!supabaseClient) {
-        alert('Authentication service loading, please try again in a moment');
-        return;
-      }
       const email = authEmail.value.trim();
       const password = authPassword.value.trim();
 
@@ -768,55 +739,42 @@
 
       try {
         if (isSignupMode) {
-          const { data, error } = await supabaseClient.auth.signUp({
-            email,
-            password,
-            options: {
-              emailRedirectTo: `${window.location.origin}/pages/movies/`
-            }
-          });
-          if (error) {
-            alert('Sign up error: ' + error.message);
-            return;
-          }
-          alert('Check your email to confirm your account');
-          authModal.classList.remove('active');
+          await firebase.auth().createUserWithEmailAndPassword(email, password);
+          alert('Account created! You can now sign in.');
+          authEmail.value = '';
+          authPassword.value = '';
+          isSignupMode = false;
+          // Update UI labels
+          authTitle.textContent = 'Sign In';
+          authSubmitBtn.textContent = 'Sign In with Email';
+          document.getElementById('authToggleText').textContent = "Don't have an account?";
+          toggleSignupBtn.textContent = 'Sign Up';
         } else {
-          const { data, error } = await supabaseClient.auth.signInWithPassword({
-            email,
-            password
-          });
-          if (error) {
-            alert('Sign in error: ' + error.message);
-            return;
-          }
-          currentUser = data.session.user;
-          updateProfileUI();
-          authModal.classList.remove('active');
+          await firebase.auth().signInWithEmailAndPassword(email, password);
+          authEmail.value = '';
+          authPassword.value = '';
         }
       } catch (error) {
-        alert('Authentication error: ' + error.message);
+        if (isSignupMode) {
+          alert('Sign up error: ' + error.message);
+        } else {
+          alert('Sign in error: ' + error.message);
+        }
       }
     });
 
     authGoogleBtn.addEventListener('click', async () => {
-      if (!supabaseClient) {
-        alert('Authentication service loading, please try again in a moment');
-        return;
-      }
       try {
-        const { data, error } = await supabaseClient.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo: `${window.location.origin}/pages/movies/`
-          }
-        });
-        if (error) {
-          alert('Google sign in error: ' + error.message);
-          return;
-        }
+        const provider = new firebase.auth.GoogleAuthProvider();
+        await firebase.auth().signInWithPopup(provider);
       } catch (error) {
-        alert('Google sign in error: ' + error.message);
+        if (error.code === 'auth/popup-blocked') {
+          alert('Pop-up was blocked. Please check your browser settings.');
+        } else if (error.code === 'auth/cancelled-popup-request') {
+          // User cancelled, no need to show alert
+        } else {
+          alert('Google sign in error: ' + error.message);
+        }
       }
     });
 
@@ -826,65 +784,25 @@
     });
 
     logoutBtn.addEventListener('click', async () => {
-      if (!supabaseClient) {
-        currentUser = null;
-        updateProfileUI();
-        profileDropdown.classList.remove('active');
-        return;
-      }
       try {
-        await supabaseClient.auth.signOut();
-        currentUser = null;
-        updateProfileUI();
-        profileDropdown.classList.remove('active');
+        await firebase.auth().signOut();
       } catch (error) {
         alert('Logout error: ' + error.message);
       }
     });
 
     async function trackWatchHistory(mediaId, mediaType, title, posterPath, season = null, episode = null) {
-      if (!currentUser || !supabaseClient) return;
-
-      try {
-        const { error } = await supabaseClient
-          .from('watch_history')
-          .upsert({
-            user_id: currentUser.id,
-            media_id: mediaId,
-            media_type: mediaType,
-            title: title,
-            poster_path: posterPath,
-            current_season: season,
-            current_episode: episode,
-            last_watched: new Date().toISOString()
-          }, { onConflict: 'user_id,media_id,media_type' });
-
-        if (error) throw error;
-      } catch (error) {
-      }
+      // Watch history tracking disabled - requires backend implementation
+      // In the future, this can be integrated with Firebase Realtime Database or Firestore
+      if (!currentUser) return;
+      
+      // TODO: Implement watch history tracking with Firebase
     }
 
     (async () => {
       await waitForConfig();
-      if (ENV.SUPABASE_URL && ENV.SUPABASE_ANON_KEY && window.supabase) {
-        supabaseClient = window.supabase.createClient(ENV.SUPABASE_URL, ENV.SUPABASE_ANON_KEY, {
-          auth: {
-            persistSession: true,
-            autoRefreshToken: true,
-            detectSessionInUrl: true
-          }
-        });
-        setupAuthListener();
-        await new Promise(r => setTimeout(r, 200));
-        
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (session?.user) {
-          currentUser = session.user;
-          updateProfileUI();
-        }
-        
-        await processOAuthHash();
-      }
+      // Firebase authentication is already initialized at the top of the script
+      // Auth state changes are handled by the onAuthStateChanged listener
     })();
     </script>
     <script>
