@@ -656,19 +656,15 @@
     }
 
     async function processOAuthHash() {
-      if (!supabaseClient || !window.location.hash) return;
+      if (!window.location.hash.includes('access_token')) return;
+      if (sessionStorage.getItem('oauth_processing')) return;
+      
       try {
-        const { data, error } = await supabaseClient.auth.getSession();
-        if (error) throw error;
-        if (data?.session?.user) {
-          currentUser = data.session.user;
-          updateProfileUI();
-          window.history.replaceState({}, document.title, window.location.pathname);
-          if (document.getElementById('authModal').classList.contains('active')) {
-            document.getElementById('authModal').classList.remove('active');
-          }
-        }
+        sessionStorage.setItem('oauth_processing', 'true');
+        await new Promise(r => setTimeout(r, 1000));
+        window.location.href = window.location.pathname;
       } catch (err) {
+        sessionStorage.removeItem('oauth_processing');
       }
     }
 
