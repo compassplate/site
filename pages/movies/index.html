@@ -619,9 +619,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
     let supabaseClient = null;
-    if (ENV.SUPABASE_URL && ENV.SUPABASE_KEY && window.supabase) {
-      supabaseClient = window.supabase.createClient(ENV.SUPABASE_URL, ENV.SUPABASE_KEY);
-    }
 
     let currentUser = null;
     let isSignupMode = false;
@@ -708,7 +705,7 @@
         authEmail.style.display = 'none';
         authPassword.style.display = 'none';
         authSubmitBtn.textContent = 'Sign In with Email';
-        toggleSignupBtn.textContent = "Don't have an account? Sign Up";
+        toggleSignupBtn.textContent = "Sign Up";
       }
     });
 
@@ -816,12 +813,18 @@
 
     (async () => {
       await waitForConfig();
+      if (ENV.SUPABASE_URL && ENV.SUPABASE_KEY && window.supabase) {
+        supabaseClient = window.supabase.createClient(ENV.SUPABASE_URL, ENV.SUPABASE_KEY);
+      }
       checkAuth();
     })();
     </script>
     <script>
     (async () => {
       await waitForConfig();
+      if (ENV.SUPABASE_URL && ENV.SUPABASE_KEY && window.supabase) {
+        supabaseClient = window.supabase.createClient(ENV.SUPABASE_URL, ENV.SUPABASE_KEY);
+      }
       const API_KEY = ENV.TMDB_API_KEY;
     const BASE_URL = 'https://api.themoviedb.org/3';
     const IMG_BASE = 'https://image.tmdb.org/t/p/w500';
