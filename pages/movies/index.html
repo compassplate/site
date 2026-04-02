@@ -655,6 +655,23 @@
       });
     }
 
+    async function processOAuthHash() {
+      if (!supabaseClient || !window.location.hash) return;
+      try {
+        const { data, error } = await supabaseClient.auth.getSession();
+        if (error) throw error;
+        if (data?.session?.user) {
+          currentUser = data.session.user;
+          updateProfileUI();
+          window.history.replaceState({}, document.title, window.location.pathname);
+          if (document.getElementById('authModal').classList.contains('active')) {
+            document.getElementById('authModal').classList.remove('active');
+          }
+        }
+      } catch (err) {
+      }
+    }
+
     async function checkAuth() {
       if (!supabaseClient) return;
       const { data: { session } } = await supabaseClient.auth.getSession();
@@ -856,6 +873,8 @@
       if (ENV.SUPABASE_URL && ENV.SUPABASE_ANON_KEY && window.supabase) {
         supabaseClient = window.supabase.createClient(ENV.SUPABASE_URL, ENV.SUPABASE_ANON_KEY);
         setupAuthListener();
+        await new Promise(r => setTimeout(r, 100));
+        await processOAuthHash();
       }
     })();
     </script>
