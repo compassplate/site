@@ -1028,6 +1028,13 @@
                     <div class="content-card-title">${item.title}</div>
                 </div>
             `;
+            card.addEventListener('click', () => {
+                if (item.type === 'tv') {
+                    openTvShowModal({ id: item.id, name: item.title, poster_path: item.posterPath, overview: '', first_air_date: '' });
+                } else {
+                    openMovieModal({ id: item.id, title: item.title, poster_path: item.posterPath, overview: '', release_date: '' });
+                }
+            });
             grid.appendChild(card);
         });
         section.style.display = 'block';
