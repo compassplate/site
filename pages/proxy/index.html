@@ -290,11 +290,12 @@
             if (data.type === 'html') {
                 const iframe = document.createElement('iframe');
                 iframe.className = 'proxy-frame';
+                iframe.style.cssText = 'width: 100%; height: 100%; display: block;';
                 iframe.srcdoc = data.content;
                 proxyContent.appendChild(iframe);
             } else if (data.type === 'text') {
                 const pre = document.createElement('pre');
-                pre.style.cssText = 'padding: 20px; white-space: pre-wrap; word-wrap: break-word; color: #000; background: #fff; height: 100%; overflow: auto; margin: 0;';
+                pre.style.cssText = 'padding: 20px; white-space: pre-wrap; word-wrap: break-word; color: #000; background: #fff; height: 100%; overflow: auto; margin: 0; width: 100%; display: block;';
                 pre.textContent = data.content;
                 proxyContent.appendChild(pre);
             }
