@@ -698,13 +698,13 @@
         authEmail.style.display = 'block';
         authPassword.style.display = 'block';
         authSubmitBtn.textContent = 'Sign Up with Email';
-        toggleSignupBtn.textContent = 'Sign In';
+        toggleSignupBtn.textContent = 'Already have an account? Sign In';
       } else {
         authTitle.textContent = 'Sign In';
-        authEmail.style.display = 'block';
-        authPassword.style.display = 'block';
+        authEmail.style.display = 'none';
+        authPassword.style.display = 'none';
         authSubmitBtn.textContent = 'Sign In with Email';
-        toggleSignupBtn.textContent = 'Sign Up';
+        toggleSignupBtn.textContent = "Don't have an account? Sign Up";
       }
     });
 
@@ -792,9 +792,7 @@
           }, { onConflict: 'user_id,media_id,media_type' });
 
         if (error) throw error;
-        console.log('[Watch History] Tracked:', title);
       } catch (error) {
-        console.error('[Watch History Error]:', error);
       }
     }
 
@@ -802,27 +800,12 @@
     </script>
     <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/service-worker.js').then(reg => {
-        console.log('[AdBlocker] Service Worker registered successfully');
-      }).catch(err => {
-        console.warn('[AdBlocker] Service Worker registration failed:', err);
-      });
-    }
-
-    function removeRedirectMeta() {
-      document.querySelectorAll('meta[http-equiv="refresh"]').forEach(el => el.remove());
-      document.querySelectorAll('meta[http-equiv="X-UA-Compatible"]').forEach(el => {
-        if (el.content && el.content.includes('redirect')) el.remove();
-      });
+      navigator.serviceWorker.register('/service-worker.js');
     }
 
     const API_KEY = ENV.TMDB_API_KEY;
     const BASE_URL = 'https://api.themoviedb.org/3';
     const IMG_BASE = 'https://image.tmdb.org/t/p/w500';
-
-    if (!API_KEY || !ENV.SUPABASE_URL || !ENV.SUPABASE_KEY) {
-        console.error('[Config] Missing required environment variables. Check your .env file.');
-    }
 
     let currentType = 'movie'; 
     let currentTvShow = null; 
@@ -924,8 +907,7 @@
                 moviesContainer.appendChild(card);
             });
         } catch (error) {
-            console.error('Error fetching content:', error);
-            moviesContainer.innerHTML = '<div class="no-results">Error loading content. Make sure your API key is valid.</div>';
+            moviesContainer.innerHTML = '<div class="no-results">Error loading content.</div>';
         }
     }
 
@@ -991,7 +973,6 @@
                 await loadEpisodes();
             }
         } catch (error) {
-            console.error('Error fetching TV show details:', error);
             const modalBody = document.getElementById('modalBody');
             modalBody.innerHTML = '<p>Error loading TV show details.</p>';
             movieModal.classList.add('active');
@@ -1023,7 +1004,6 @@
                 episodesList.innerHTML = '<div class="episode-item">No episodes available</div>';
             }
         } catch (error) {
-            console.error('Error fetching episodes:', error);
             episodesList.innerHTML = '<div class="episode-item">Error loading episodes</div>';
         }
     }
