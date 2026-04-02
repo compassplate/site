@@ -618,12 +618,16 @@
     <script src="/env.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-    const supabase = window.supabase.createClient(ENV.SUPABASE_URL, ENV.SUPABASE_KEY);
+    let supabase = null;
+    if (ENV.SUPABASE_URL && ENV.SUPABASE_KEY && window.supabase) {
+      supabase = window.supabase.createClient(ENV.SUPABASE_URL, ENV.SUPABASE_KEY);
+    }
 
     let currentUser = null;
     let isSignupMode = false;
 
     async function checkAuth() {
+      if (!supabase) return;
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         currentUser = session.user;
@@ -709,6 +713,10 @@
     });
 
     authSubmitBtn.addEventListener('click', async () => {
+      if (!supabase) {
+        alert('Authentication service not available');
+        return;
+      }
       const email = authEmail.value.trim();
       const password = authPassword.value.trim();
 
@@ -745,6 +753,10 @@
     });
 
     authGoogleBtn.addEventListener('click', async () => {
+      if (!supabase) {
+        alert('Authentication service not available');
+        return;
+      }
       try {
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: 'google',
@@ -764,6 +776,12 @@
     });
 
     logoutBtn.addEventListener('click', async () => {
+      if (!supabase) {
+        currentUser = null;
+        updateProfileUI();
+        profileDropdown.classList.remove('active');
+        return;
+      }
       try {
         await supabase.auth.signOut();
         currentUser = null;
@@ -775,7 +793,7 @@
     });
 
     async function trackWatchHistory(mediaId, mediaType, title, posterPath, season = null, episode = null) {
-      if (!currentUser) return;
+      if (!currentUser || !supabase) return;
 
       try {
         const { error } = await supabase
@@ -796,14 +814,15 @@
       }
     }
 
-    checkAuth();
+    (async () => {
+      await waitForConfig();
+      checkAuth();
+    })();
     </script>
     <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/service-worker.js');
-    }
-
-    const API_KEY = ENV.TMDB_API_KEY;
+    (async () => {
+      await waitForConfig();
+      const API_KEY = ENV.TMDB_API_KEY;
     const BASE_URL = 'https://api.themoviedb.org/3';
     const IMG_BASE = 'https://image.tmdb.org/t/p/w500';
 
@@ -1029,6 +1048,7 @@
         const posterPath = currentTvShow?.poster_path ? IMG_BASE + currentTvShow.poster_path : '';
         trackWatchHistory(tvShowId, 'tv', title, posterPath, seasonNumber, episodeNumber);
     }
+    })();
     </script>
 </body>
 </html>
