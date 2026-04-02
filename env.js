@@ -1,6 +1,6 @@
 let ENV = {
   SUPABASE_URL: '',
-  SUPABASE_KEY: '',
+  SUPABASE_ANON_KEY: '',
   TMDB_API_KEY: ''
 };
 
@@ -13,7 +13,7 @@ async function loadConfig() {
       const config = await response.json();
       ENV = {
         SUPABASE_URL: config.SUPABASE_URL || '',
-        SUPABASE_KEY: config.SUPABASE_KEY || '',
+        SUPABASE_ANON_KEY: config.SUPABASE_ANON_KEY || '',
         TMDB_API_KEY: config.TMDB_API_KEY || ''
       };
     }

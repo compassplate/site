@@ -610,7 +610,7 @@
             <button id="authSubmitBtn" class="auth-button">Sign In with Email</button>
             <button id="authGoogleBtn" class="auth-button auth-button-google">Sign In with Google</button>
             <div class="auth-toggle" id="authToggle">
-                Don't have an account? <button id="toggleSignupBtn">Sign Up</button>
+                <span id="authToggleText">Don't have an account?</span> <button id="toggleSignupBtn">Sign Up</button>
             </div>
         </div>
     </div>
@@ -694,24 +694,27 @@
 
     toggleSignupBtn.addEventListener('click', () => {
       isSignupMode = !isSignupMode;
+      const authToggleText = document.getElementById('authToggleText');
       if (isSignupMode) {
         authTitle.textContent = 'Sign Up';
         authEmail.style.display = 'block';
         authPassword.style.display = 'block';
         authSubmitBtn.textContent = 'Sign Up with Email';
-        toggleSignupBtn.textContent = 'Already have an account? Sign In';
+        authToggleText.textContent = 'Already have an account?';
+        toggleSignupBtn.textContent = 'Sign In';
       } else {
         authTitle.textContent = 'Sign In';
         authEmail.style.display = 'none';
         authPassword.style.display = 'none';
         authSubmitBtn.textContent = 'Sign In with Email';
-        toggleSignupBtn.textContent = "Sign Up";
+        authToggleText.textContent = "Don't have an account?";
+        toggleSignupBtn.textContent = 'Sign Up';
       }
     });
 
     authSubmitBtn.addEventListener('click', async () => {
       if (!supabaseClient) {
-        alert('Authentication service not available');
+        alert('Authentication service loading, please try again in a moment');
         return;
       }
       const email = authEmail.value.trim();
@@ -731,7 +734,10 @@
               emailRedirectTo: `${window.location.origin}/pages/movies/`
             }
           });
-          if (error) throw error;
+          if (error) {
+            alert('Sign up error: ' + error.message);
+            return;
+          }
           alert('Check your email to confirm your account');
           authModal.classList.remove('active');
         } else {
@@ -739,7 +745,10 @@
             email,
             password
           });
-          if (error) throw error;
+          if (error) {
+            alert('Sign in error: ' + error.message);
+            return;
+          }
           currentUser = data.session.user;
           updateProfileUI();
           authModal.classList.remove('active');
@@ -751,7 +760,7 @@
 
     authGoogleBtn.addEventListener('click', async () => {
       if (!supabaseClient) {
-        alert('Authentication service not available');
+        alert('Authentication service loading, please try again in a moment');
         return;
       }
       try {
@@ -761,7 +770,10 @@
             redirectTo: `${window.location.origin}/pages/movies/`
           }
         });
-        if (error) throw error;
+        if (error) {
+          alert('Google sign in error: ' + error.message);
+          return;
+        }
       } catch (error) {
         alert('Google sign in error: ' + error.message);
       }
@@ -813,18 +825,18 @@
 
     (async () => {
       await waitForConfig();
-      if (ENV.SUPABASE_URL && ENV.SUPABASE_KEY && window.supabase) {
-        supabaseClient = window.supabase.createClient(ENV.SUPABASE_URL, ENV.SUPABASE_KEY);
+      if (ENV.SUPABASE_URL && ENV.SUPABASE_ANON_KEY && window.supabase) {
+        supabaseClient = window.supabase.createClient(ENV.SUPABASE_URL, ENV.SUPABASE_ANON_KEY);
+        try {
+          await checkAuth();
+        } catch (err) {
+        }
       }
-      checkAuth();
     })();
     </script>
     <script>
     (async () => {
       await waitForConfig();
-      if (ENV.SUPABASE_URL && ENV.SUPABASE_KEY && window.supabase) {
-        supabaseClient = window.supabase.createClient(ENV.SUPABASE_URL, ENV.SUPABASE_KEY);
-      }
       const API_KEY = ENV.TMDB_API_KEY;
     const BASE_URL = 'https://api.themoviedb.org/3';
     const IMG_BASE = 'https://image.tmdb.org/t/p/w500';
