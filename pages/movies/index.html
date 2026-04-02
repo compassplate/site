@@ -605,8 +605,8 @@
         <button class="close-auth">&times;</button>
         <div class="auth-content">
             <h2 id="authTitle">Sign In</h2>
-            <input id="authEmail" type="email" placeholder="Email" style="display: none;">
-            <input id="authPassword" type="password" placeholder="Password" style="display: none;">
+            <input id="authEmail" type="email" placeholder="Email">
+            <input id="authPassword" type="password" placeholder="Password">
             <button id="authSubmitBtn" class="auth-button">Sign In with Email</button>
             <button id="authGoogleBtn" class="auth-button auth-button-google">Sign In with Google</button>
             <div class="auth-toggle" id="authToggle">
@@ -632,7 +632,7 @@
         if (session?.user) {
           currentUser = session.user;
           updateProfileUI();
-          if (window.location.hash.includes('access_token')) {
+          if (window.location.hash.includes('access_token') || window.location.hash.includes('error')) {
             window.history.replaceState({}, document.title, window.location.pathname);
           }
           if (document.getElementById('authModal').classList.contains('active')) {
@@ -641,6 +641,16 @@
         } else {
           currentUser = null;
           updateProfileUI();
+        }
+      });
+      
+      supabaseClient.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          currentUser = session.user;
+          updateProfileUI();
+          if (window.location.hash.includes('access_token') || window.location.hash.includes('error')) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
         }
       });
     }
@@ -719,15 +729,11 @@
       const authToggleText = document.getElementById('authToggleText');
       if (isSignupMode) {
         authTitle.textContent = 'Sign Up';
-        authEmail.style.display = 'block';
-        authPassword.style.display = 'block';
         authSubmitBtn.textContent = 'Sign Up with Email';
         authToggleText.textContent = 'Already have an account?';
         toggleSignupBtn.textContent = 'Sign In';
       } else {
         authTitle.textContent = 'Sign In';
-        authEmail.style.display = 'none';
-        authPassword.style.display = 'none';
         authSubmitBtn.textContent = 'Sign In with Email';
         authToggleText.textContent = "Don't have an account?";
         toggleSignupBtn.textContent = 'Sign Up';
