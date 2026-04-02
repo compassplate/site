@@ -634,6 +634,22 @@
       }
     }
 
+    async function handleOAuthCallback() {
+      if (!supabaseClient) return;
+      try {
+        const { data: { session }, error } = await supabaseClient.auth.getSession();
+        if (error) throw error;
+        if (session) {
+          currentUser = session.user;
+          updateProfileUI();
+          if (window.location.hash.includes('access_token')) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+        }
+      } catch (err) {
+      }
+    }
+
     function updateProfileUI() {
       const profilePic = document.getElementById('profilePic');
       if (currentUser) {
@@ -828,7 +844,7 @@
       if (ENV.SUPABASE_URL && ENV.SUPABASE_ANON_KEY && window.supabase) {
         supabaseClient = window.supabase.createClient(ENV.SUPABASE_URL, ENV.SUPABASE_ANON_KEY);
         try {
-          await checkAuth();
+          await handleOAuthCallback();
         } catch (err) {
         }
       }
