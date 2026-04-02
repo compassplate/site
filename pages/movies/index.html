@@ -867,9 +867,22 @@
     (async () => {
       await waitForConfig();
       if (ENV.SUPABASE_URL && ENV.SUPABASE_ANON_KEY && window.supabase) {
-        supabaseClient = window.supabase.createClient(ENV.SUPABASE_URL, ENV.SUPABASE_ANON_KEY);
+        supabaseClient = window.supabase.createClient(ENV.SUPABASE_URL, ENV.SUPABASE_ANON_KEY, {
+          auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true
+          }
+        });
         setupAuthListener();
-        await new Promise(r => setTimeout(r, 100));
+        await new Promise(r => setTimeout(r, 200));
+        
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session?.user) {
+          currentUser = session.user;
+          updateProfileUI();
+        }
+        
         await processOAuthHash();
       }
     })();
