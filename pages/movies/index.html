@@ -670,7 +670,6 @@
       }
     });
 
-    // Auth Modal elements
     const authModal = document.getElementById('authModal');
     const closeAuthBtn = document.querySelector('.close-auth');
     const authTitle = document.getElementById('authTitle');
@@ -764,7 +763,6 @@
       profileDropdown.classList.remove('active');
     });
 
-    // Logout
     logoutBtn.addEventListener('click', async () => {
       try {
         await supabase.auth.signOut();
@@ -776,7 +774,6 @@
       }
     });
 
-    // Watch history tracking
     async function trackWatchHistory(mediaId, mediaType, title, posterPath, season = null, episode = null) {
       if (!currentUser) return;
 
@@ -801,11 +798,9 @@
       }
     }
 
-    // Initialize on page load
     checkAuth();
     </script>
     <script>
-    // Register service worker for ad blocking
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/service-worker.js').then(reg => {
         console.log('[AdBlocker] Service Worker registered successfully');
@@ -814,7 +809,6 @@
       });
     }
 
-    // Block suspicious meta redirects
     function removeRedirectMeta() {
       document.querySelectorAll('meta[http-equiv="refresh"]').forEach(el => el.remove());
       document.querySelectorAll('meta[http-equiv="X-UA-Compatible"]').forEach(el => {
@@ -826,13 +820,12 @@
     const BASE_URL = 'https://api.themoviedb.org/3';
     const IMG_BASE = 'https://image.tmdb.org/t/p/w500';
 
-    // Validate that environment variables are loaded
     if (!API_KEY || !ENV.SUPABASE_URL || !ENV.SUPABASE_KEY) {
         console.error('[Config] Missing required environment variables. Check your .env file.');
     }
 
-    let currentType = 'movie'; // 'movie' or 'tv'
-    let currentTvShow = null; // Store current TV show for season/episode selection
+    let currentType = 'movie'; 
+    let currentTvShow = null; 
 
     const backButton = document.querySelector('.back');
     const searchInput = document.getElementById('searchInput');
@@ -846,7 +839,6 @@
     const typeSelector = document.getElementById('typeSelector');
     const urlParams = new URLSearchParams(window.location.search);
 
-    // Type selector handler
     typeSelector.addEventListener('change', (e) => {
         currentType = e.target.value;
         moviesContainer.innerHTML = '';
@@ -963,7 +955,6 @@
 
         currentTvShow = tvShow;
 
-        // Fetch seasons and episodes
         try {
             const response = await fetch(`${BASE_URL}/tv/${tvShow.id}?api_key=${API_KEY}`);
             const details = await response.json();
@@ -996,7 +987,6 @@
 
             movieModal.classList.add('active');
 
-            // Load first season's episodes
             if (details.seasons && details.seasons.length > 0) {
                 await loadEpisodes();
             }
@@ -1044,7 +1034,6 @@
         playerScreen.classList.add('active');
         movieModal.classList.remove('active');
 
-        // Track in watch history
         const posterPath = document.querySelector('.movie-poster')?.src;
         const title = document.querySelector('.movie-details h2')?.textContent || 'Unknown Movie';
         trackWatchHistory(movieId, 'movie', title, posterPath);
@@ -1056,7 +1045,6 @@
         playerScreen.classList.add('active');
         movieModal.classList.remove('active');
 
-        // Track in watch history
         const title = currentTvShow?.name || 'Unknown Show';
         const posterPath = currentTvShow?.poster_path ? IMG_BASE + currentTvShow.poster_path : '';
         trackWatchHistory(tvShowId, 'tv', title, posterPath, seasonNumber, episodeNumber);

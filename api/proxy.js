@@ -1,5 +1,5 @@
-import https from 'https';
-import http from 'http';
+const https = require('https');
+const http = require('http');
 
 const blockedDomains = [
   'facebook.com', 'instagram.com', 'tiktok.com',
@@ -57,7 +57,7 @@ function fetchURL(targetURL) {
   });
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
